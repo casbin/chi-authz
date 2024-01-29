@@ -31,13 +31,13 @@ func TestBasic(t *testing.T) {
 	// authentication before the authorization.
 	// In this example, we assume "alice:123" is a legal user.
 	router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	})
 
-	testAuthzRequest(t, router, "alice", "/dataset1/resource1", "GET", 200)
-	testAuthzRequest(t, router, "alice", "/dataset1/resource1", "POST", 200)
-	testAuthzRequest(t, router, "alice", "/dataset1/resource2", "GET", 200)
-	testAuthzRequest(t, router, "alice", "/dataset1/resource2", "POST", 403)
+	testAuthzRequest(t, router, "alice", "/dataset1/resource1", "GET", http.StatusOK)
+	testAuthzRequest(t, router, "alice", "/dataset1/resource1", "POST", http.StatusOK)
+	testAuthzRequest(t, router, "alice", "/dataset1/resource2", "GET", http.StatusOK)
+	testAuthzRequest(t, router, "alice", "/dataset1/resource2", "POST", http.StatusForbidden)
 }
 
 func TestPathWildcard(t *testing.T) {
@@ -51,22 +51,22 @@ func TestPathWildcard(t *testing.T) {
 	// authentication before the authorization.
 	// In this example, we assume "bob:123" is a legal user.
 	router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	})
 
-	testAuthzRequest(t, router, "bob", "/dataset2/resource1", "GET", 200)
-	testAuthzRequest(t, router, "bob", "/dataset2/resource1", "POST", 200)
-	testAuthzRequest(t, router, "bob", "/dataset2/resource1", "DELETE", 200)
-	testAuthzRequest(t, router, "bob", "/dataset2/resource2", "GET", 200)
-	testAuthzRequest(t, router, "bob", "/dataset2/resource2", "POST", 403)
-	testAuthzRequest(t, router, "bob", "/dataset2/resource2", "DELETE", 403)
+	testAuthzRequest(t, router, "bob", "/dataset2/resource1", "GET", http.StatusOK)
+	testAuthzRequest(t, router, "bob", "/dataset2/resource1", "POST", http.StatusOK)
+	testAuthzRequest(t, router, "bob", "/dataset2/resource1", "DELETE", http.StatusOK)
+	testAuthzRequest(t, router, "bob", "/dataset2/resource2", "GET", http.StatusOK)
+	testAuthzRequest(t, router, "bob", "/dataset2/resource2", "POST", http.StatusForbidden)
+	testAuthzRequest(t, router, "bob", "/dataset2/resource2", "DELETE", http.StatusForbidden)
 
-	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item1", "GET", 403)
-	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item1", "POST", 200)
-	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item1", "DELETE", 403)
-	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item2", "GET", 403)
-	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item2", "POST", 200)
-	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item2", "DELETE", 403)
+	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item1", "GET", http.StatusForbidden)
+	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item1", "POST", http.StatusOK)
+	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item1", "DELETE", http.StatusForbidden)
+	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item2", "GET", http.StatusForbidden)
+	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item2", "POST", http.StatusOK)
+	testAuthzRequest(t, router, "bob", "/dataset2/folder1/item2", "DELETE", http.StatusForbidden)
 }
 
 func TestRBAC(t *testing.T) {
@@ -80,24 +80,24 @@ func TestRBAC(t *testing.T) {
 	// authentication before the authorization.
 	// In this example, we assume "cathy:123" is a legal user.
 	router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	})
 
 	// cathy can access all /dataset1/* resources via all methods because it has the dataset1_admin role.
-	testAuthzRequest(t, router, "cathy", "/dataset1/item", "GET", 200)
-	testAuthzRequest(t, router, "cathy", "/dataset1/item", "POST", 200)
-	testAuthzRequest(t, router, "cathy", "/dataset1/item", "DELETE", 200)
-	testAuthzRequest(t, router, "cathy", "/dataset2/item", "GET", 403)
-	testAuthzRequest(t, router, "cathy", "/dataset2/item", "POST", 403)
-	testAuthzRequest(t, router, "cathy", "/dataset2/item", "DELETE", 403)
+	testAuthzRequest(t, router, "cathy", "/dataset1/item", "GET", http.StatusOK)
+	testAuthzRequest(t, router, "cathy", "/dataset1/item", "POST", http.StatusOK)
+	testAuthzRequest(t, router, "cathy", "/dataset1/item", "DELETE", http.StatusOK)
+	testAuthzRequest(t, router, "cathy", "/dataset2/item", "GET", http.StatusForbidden)
+	testAuthzRequest(t, router, "cathy", "/dataset2/item", "POST", http.StatusForbidden)
+	testAuthzRequest(t, router, "cathy", "/dataset2/item", "DELETE", http.StatusForbidden)
 
 	// delete all roles on user cathy, so cathy cannot access any resources now.
 	e.DeleteRolesForUser("cathy")
 
-	testAuthzRequest(t, router, "cathy", "/dataset1/item", "GET", 403)
-	testAuthzRequest(t, router, "cathy", "/dataset1/item", "POST", 403)
-	testAuthzRequest(t, router, "cathy", "/dataset1/item", "DELETE", 403)
-	testAuthzRequest(t, router, "cathy", "/dataset2/item", "GET", 403)
-	testAuthzRequest(t, router, "cathy", "/dataset2/item", "POST", 403)
-	testAuthzRequest(t, router, "cathy", "/dataset2/item", "DELETE", 403)
+	testAuthzRequest(t, router, "cathy", "/dataset1/item", "GET", http.StatusForbidden)
+	testAuthzRequest(t, router, "cathy", "/dataset1/item", "POST", http.StatusForbidden)
+	testAuthzRequest(t, router, "cathy", "/dataset1/item", "DELETE", http.StatusForbidden)
+	testAuthzRequest(t, router, "cathy", "/dataset2/item", "GET", http.StatusForbidden)
+	testAuthzRequest(t, router, "cathy", "/dataset2/item", "POST", http.StatusForbidden)
+	testAuthzRequest(t, router, "cathy", "/dataset2/item", "DELETE", http.StatusForbidden)
 }
