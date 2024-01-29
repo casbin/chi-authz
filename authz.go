@@ -32,7 +32,7 @@ func Authorizer(e *casbin.Enforcer) func(next http.Handler) http.Handler {
 			if e.Enforce(user, path, method) {
 				next.ServeHTTP(w, r)
 			} else {
-				http.Error(w, http.StatusText(403), 403)
+				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			}
 		}
 
